@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Delegation Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: slim top bar with three role tabs; the participant run is a two-pane workspace (task list + task), stacking on phones */
+:root{
+  --bg:#f2f4f7; --surface:#ffffff; --fg:#16202b; --muted:#5a6676; --line:#d8dee6;
+  --accent:#1f56c9; --accent-ink:#ffffff; --accent-soft:#e7eefc;
+  --agent:#6a45c0; --agent-soft:#f1ecfb;
+  --warn:#a35f00; --warn-soft:#fff2dc; --bad:#bf352b; --bad-soft:#fdecea; --good:#1b7546; --good-soft:#e4f3ea;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#171e27; --fg:#e5eaf0; --muted:#9aa5b4; --line:#2a3440;
+  --accent:#709cff; --accent-ink:#0b1220; --accent-soft:#1a2946;
+  --agent:#b49ef2; --agent-soft:#271f3d;
+  --warn:#f0a83a; --warn-soft:#382810; --bad:#ff7d72; --bad-soft:#3a1c1a; --good:#62d09a; --good-soft:#14301f;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#171e27; --fg:#e5eaf0; --muted:#9aa5b4; --line:#2a3440;
+  --accent:#709cff; --accent-ink:#0b1220; --accent-soft:#1a2946;
+  --agent:#b49ef2; --agent-soft:#271f3d;
+  --warn:#f0a83a; --warn-soft:#382810; --bad:#ff7d72; --bad-soft:#3a1c1a; --good:#62d09a; --good-soft:#14301f;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.5}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:1.9rem} h2{font-size:1.35rem} h3{font-size:1.05rem}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:10px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.15rem;display:flex;align-items:center;gap:8px}
+.brand i{width:10px;height:10px;border-radius:2px;background:var(--agent);display:inline-block}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs a{padding:6px 12px;border-radius:999px;color:var(--muted);text-decoration:none;font-weight:600;font-size:.92rem}
+.tabs a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+main.wrap{padding-block:24px 64px;display:grid;gap:20px}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:grid;gap:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:9px 16px;font-weight:600;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.agent{background:var(--agent-soft);border-color:var(--agent);color:var(--agent)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spacer{flex:1}
+label.field{display:grid;gap:4px;font-weight:600;font-size:.92rem}
+input[type=text],select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+textarea{min-height:180px;resize:vertical;line-height:1.5}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;width:fit-content}
+.seg label{padding:8px 14px;cursor:pointer;font-weight:600;font-size:.92rem}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--accent);color:var(--accent-ink)}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.disclaimer{border:1px dashed var(--agent);background:var(--agent-soft);color:var(--fg);border-radius:6px;padding:10px 12px;font-size:.92rem}
+.disclaimer b{color:var(--agent)}
+.chip{display:inline-block;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--bg);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.chip.own{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.agent{background:var(--agent-soft);color:var(--agent);border-color:transparent}
+.chip.ex{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.chip.good{background:var(--good-soft);color:var(--good);border-color:transparent}
+.chip.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+/* run workspace */
+.runbar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px}
+.timer{font-family:var(--f-mono);font-size:1.6rem;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.timer.warn{color:var(--warn)} .timer.crit{color:var(--bad)}
+.members{display:flex;gap:6px;flex-wrap:wrap}
+.members button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 12px;font-weight:600;font-size:.88rem;cursor:pointer}
+.members button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.work{display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:760px){.work{grid-template-columns:1fr}}
+.tasklist{display:grid;gap:6px}
+.tasklist button{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:9px 10px;cursor:pointer;min-width:0}
+.tasklist button[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.tasklist button.done{opacity:.7}
+.tasklist .num{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.tasklist .t{font-weight:600;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scenario{display:grid;gap:4px;border-left:3px solid var(--accent);padding:4px 0 4px 12px}
+.materials{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:12px 14px;white-space:pre-wrap;font-size:.95rem}
+.files{display:flex;gap:8px;flex-wrap:wrap}
+.files label{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-family:var(--f-mono);font-size:.8rem;cursor:pointer;background:var(--bg)}
+.files label:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.agentnote{border-left:3px solid var(--agent);background:var(--agent-soft);padding:8px 12px;border-radius:0 6px 6px 0;font-size:.92rem}
+.err{color:var(--bad);font-weight:600;font-size:.92rem}
+.working{display:inline-flex;gap:8px;align-items:center;color:var(--agent);font-weight:600}
+.working i{width:8px;height:8px;border-radius:50%;background:var(--agent);animation:pulse 1s infinite ease-in-out}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.working i{animation:none}}
+/* panel */
+.answer{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:14px;font-size:.98rem}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+@media (max-width:520px){.scale{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}}
+.scale button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:10px 4px;cursor:pointer;display:grid;gap:2px;justify-items:center}
+.scale button b{font-family:var(--f-mono);font-size:1.15rem;font-variant-numeric:tabular-nums}
+.scale button span{font-size:.75rem;color:var(--muted);text-align:center}
+.scale button:hover{border-color:var(--accent);background:var(--accent-soft)}
+.progress{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--accent)}
+/* researcher */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.cond h3{display:flex;gap:8px;align-items:center}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font-size:.95rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.big{font-family:var(--f-display);font-size:2.2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--bg);font-weight:700;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+td.txt{white-space:normal;min-width:220px;max-width:420px}
+tr:last-child td{border-bottom:0}
+svg text{fill:var(--muted);font-family:var(--f-body);font-size:12px}
+.lede{max-width:65ch}
+</style>
+</head>
+<body>
+
+
+<!-- Netlify Forms: these hidden forms let Netlify detect the fields at deploy time. Data is posted to them by script. -->
+<form name="submissions" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input name="bot-field"><input name="submission_id"><input name="session_id"><input name="condition"><input name="member_id"><input name="task_id"><input name="agent_version"><input name="agent_source"><input name="delegated"><input name="edited"><input name="skipped"><input name="timed_out"><input name="duration_sec"><input name="files"><input name="submitted_at"><textarea name="text"></textarea>
+</form>
+<form name="ratings" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input name="bot-field"><input name="submission_id"><input name="judge"><input name="score"><input name="rated_at">
+</form>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><i aria-hidden="true"></i>Delegation Lab</div>
+    <nav class="tabs" aria-label="Role">
+      <a href="#participant" data-view="participant">Participant</a>
+      <a href="#panel" data-view="panel">Panel</a>
+      <a href="#researcher" data-view="researcher">Researcher</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+
+<script>
+"use strict";
+/* ---------- Task repository (fictional company: Alderbrook Foods, an Austrian snack maker) ---------- */
+const TASKS = [
+ {id:"T01",context:"Finance closed the Q3 books yesterday. Lena Huber, who runs the DACH region, needs the numbers for her board meeting next week. Your boss, Katrin Weiss, has asked {you} to send her the report today.",kind:"Email",title:"Send the Q3 sales report",
+  prompt:"Email Lena Huber (Regional Manager, DACH) the Q3 sales report. Ask her to confirm the figures by Friday 13 November. Attach the right file.",
+  materials:"Lena's address: lena.huber@alderbrook.example",
+  files:["Q3_Sales_DACH.pdf","Q2_Sales_DACH.pdf","Marketing_Plan_2027.docx"],
+  strong:{text:"Subject: Q3 sales report – DACH\n\nHi Lena,\n\nPlease find attached the Q3 sales report for the DACH region. Could you confirm the figures by Friday 13 November?\n\nThanks,\n[Your name]",files:["Q3_Sales_DACH.pdf"]},
+  weak:{text:"Subject: Q3 sales report – DACH\n\nHi Lena,\n\nPlease find attached the Q3 sales report for the DACH region. Could you confirm the figures by Friday 13 November?\n\nThanks,\n[Your name]",files:["Q2_Sales_DACH.pdf"],flaw:"Attaches the Q2 report instead of Q3."}},
+ {id:"T02",context:"Word has reached the office that Valley Harvest may cut its prices. Before Monday’s strategy meeting, Katrin has asked {you} to pull together the key figures on our three competitors.",kind:"Research",title:"Collect competitor KPIs",
+  prompt:"Collect 2025 revenue, revenue growth and market share for our three competitors into a short table.",
+  materials:"Fact sheet (Austrian salty-snack market)\n\nCrisp & Co reported 2025 revenue of €412m, up 6% on the year. It holds 18% of the market.\nValley Harvest grew revenue 11% to €268m and holds 12% of the market.\nPantry Nine's revenue fell 3% to €190m. Its market share is 9%.",
+  strong:{text:"Competitor | Revenue 2025 | Growth | Market share\nCrisp & Co | €412m | +6% | 18%\nValley Harvest | €268m | +11% | 12%\nPantry Nine | €190m | −3% | 9%"},
+  weak:{text:"Competitor | Revenue 2025 | Growth | Market share\nCrisp & Co | €412m | +11% | 18%\nValley Harvest | €268m | +6% | 12%\nPantry Nine | €190m | −3% | 9%",flaw:"Growth figures for Crisp & Co and Valley Harvest are swapped."}},
+ {id:"T03",context:"Several colleagues were out sick during Tuesday’s product sync. Katrin has asked {you} to send round a short summary so nobody misses the decisions.",kind:"Summary",title:"Summarise the product sync",
+  prompt:"Write a 3–4 line summary of the meeting for colleagues who missed it.",
+  materials:"Notes – product sync, 4 Nov. Attendees: Mara, Jonas, Ines.\n- Decided: launch the paprika flavour in Vienna stores first.\n- Packaging proofs due 20 Nov (Jonas).\n- Ines to book a meeting with the supermarket buyer.\n- Next sync: 18 Nov.",
+  strong:{text:"Product sync (4 Nov): we'll launch the paprika flavour in Vienna stores first. Jonas owns the packaging proofs, due 20 Nov. Ines will book a meeting with the supermarket buyer. Next sync: 18 Nov."},
+  weak:{text:"Product sync (4 Nov): we'll launch the paprika flavour in Vienna stores first. Jonas owns the packaging proofs, due 28 Nov. Ines will book a meeting with the supermarket buyer. Next sync: 18 Nov.",flaw:"Gives the wrong deadline for packaging proofs (28 instead of 20 Nov)."}},
+ {id:"T04",context:"Procurement has picked a new packaging supplier after a three-month tender. Brightline Packaging, one of the losing bidders, is waiting for an answer, and Katrin has asked {you} to decline their offer politely.",kind:"Email",title:"Decline a supplier",
+  prompt:"Write a short, polite email declining Brightline Packaging's offer.",
+  materials:"Brightline Packaging offered a 2-year contract at €0.042 per bag. We chose another supplier (confidential) on price. We'd like to invite Brightline to bid again in 2027.",
+  strong:{text:"Subject: Your packaging offer\n\nDear Brightline team,\n\nThank you for your offer and the time you put into it. After comparing proposals, we've decided to go with another supplier for this contract. We'd be glad to invite you to bid again for our 2027 needs.\n\nBest regards,\n[Your name]"},
+  weak:{text:"Subject: Your packaging offer\n\nDear Brightline team,\n\nThank you for your offer and the time you put into it. After comparing proposals, we've decided to go with another supplier who offered €0.039 per bag. We'd be glad to invite you to bid again for our 2027 needs.\n\nBest regards,\n[Your name]",flaw:"Discloses the other supplier's confidential price."}},
+ {id:"T05",context:"The quarterly review has been moved to a new slot. Katrin has asked {you} to send the updated calendar invitation to all team leads.",kind:"Scheduling",title:"Write the review invitation",
+  prompt:"Write the text for the calendar invitation.",
+  materials:"Quarterly review: Friday 27 November, 10:00–11:30 Vienna time, room 3.14 and on Teams. Attendees: all team leads. Bring: your Q4 forecast.",
+  strong:{text:"Quarterly review\nFriday 27 November, 10:00–11:30 (Vienna time)\nRoom 3.14 or Teams\nFor: all team leads\nPlease bring your Q4 forecast."},
+  weak:{text:"Quarterly review\nFriday 27 November, 11:00–12:30 (Vienna time)\nRoom 3.14 or Teams\nFor: all team leads\nPlease bring your Q4 forecast.",flaw:"Wrong time (11:00–12:30 instead of 10:00–11:30)."}},
+ {id:"T06",context:"The CFO has noticed that marketing overspent in Q3 and wants a one-line explanation for the monthly report. Katrin has asked {you} to state the variance.",kind:"Finance",title:"Report the budget variance",
+  prompt:"In one sentence, state the variance in euros and percent, and whether marketing is over or under budget.",
+  materials:"Marketing budget Q3: €85,000\nActual spend Q3: €93,500",
+  strong:{text:"Marketing spent €93,500 against a budget of €85,000, which is €8,500 (10%) over budget."},
+  weak:{text:"Marketing spent €93,500 against a budget of €85,000, which is €8,500 (9.1%) over budget.",flaw:"Percentage calculated against actual spend instead of budget."}},
+ {id:"T07",context:"A new intern, Felix, joins the strategy team on Monday and will sit in on finance meetings. Katrin has asked {you} to give him a plain-language explanation of EBITDA.",kind:"Explain",title:"Explain EBITDA to an intern",
+  prompt:"Explain EBITDA to a new intern in two sentences.",
+  materials:"The intern has a marketing background and no finance training.",
+  strong:{text:"EBITDA stands for earnings before interest, taxes, depreciation and amortisation. It shows how much profit the core business makes before financing costs, taxes and the accounting write-down of assets."},
+  weak:{text:"EBITDA stands for earnings after taxes but before interest, depreciation and amortisation. It shows how much profit the core business makes before financing costs and the accounting write-down of assets.",flaw:"Says taxes are already deducted, which is wrong."}},
+ {id:"T08",context:"The analytics team lost a colleague last month and HR wants the vacancy posted by Friday. Katrin has asked {you} to write the requirements section of the job ad.",kind:"HR",title:"Write job requirements",
+  prompt:"Write the 'Requirements' section of the job posting as bullet points.",
+  materials:"Role: Junior Data Analyst\nMust have: SQL, Excel, fluent German and English\nNice to have: Python\nLocation: Vienna, hybrid",
+  strong:{text:"Requirements\n• Good working knowledge of SQL and Excel\n• Fluent German and English\n• Python is a plus\n• Based in Vienna (hybrid)"},
+  weak:{text:"Requirements\n• Good working knowledge of SQL and Excel\n• Fluent English\n• Python is a plus\n• Based in Vienna (hybrid)",flaw:"Leaves out the German requirement."}},
+ {id:"T09",context:"A customer has emailed about a damaged pack and says he will post about it online. Katrin has asked {you} to reply today, following company policy.",kind:"Customer",title:"Answer a complaint",
+  prompt:"Reply to the customer's complaint, following company policy.",
+  materials:"Customer: Mr Berger found a broken seal on a pack of Sea Salt Crisps (batch 4471).\nPolicy: apologise, offer a €5 replacement voucher, ask for a photo of the batch number. Refunds need manager approval.",
+  strong:{text:"Dear Mr Berger,\n\nI'm sorry the pack you bought had a broken seal. We'd like to send you a €5 voucher for a replacement. Could you reply with a photo of the pack showing the batch number? It helps our quality team trace the issue.\n\nKind regards,\nCustomer Care, Alderbrook Foods"},
+  weak:{text:"Dear Mr Berger,\n\nI'm sorry the pack you bought had a broken seal. We will refund the full purchase price and send you a €5 voucher for a replacement. Could you reply with a photo of the pack showing the batch number?\n\nKind regards,\nCustomer Care, Alderbrook Foods",flaw:"Promises a refund that needs manager approval."}},
+ {id:"T10",context:"It’s Monday morning and five issues have landed in the shared inbox. Katrin is in meetings all day and has asked {you} to decide what gets handled first.",kind:"Operations",title:"Prioritise open issues",
+  prompt:"Rank the five issues from most to least urgent, with a one-line reason for the top one.",
+  materials:"1. Typo on the website's About page\n2. Online payment page down for all customers\n3. Supplier invoice due in 30 days\n4. Two stores report empty shelves of our bestseller\n5. Request for new office chairs",
+  strong:{text:"2, 4, 3, 1, 5.\nThe payment outage blocks every online sale right now."},
+  weak:{text:"4, 2, 3, 1, 5.\nEmpty shelves mean lost sales in our stores today.",flaw:"Ranks the store issue above a total payment outage."}},
+ {id:"T11",context:"HR has closed the annual staff survey. Leadership meets on Thursday, and Katrin has asked {you} to summarise the headline results for them.",kind:"Summary",title:"Summarise the staff survey",
+  prompt:"Summarise the results in two sentences for the leadership team.",
+  materials:"Employee survey, 240 responses.\nHybrid policy: 62% satisfied, 21% neutral, 17% dissatisfied.\nMost common request: better meeting rooms (88 mentions).",
+  strong:{text:"Of 240 employees surveyed, 62% are satisfied with the hybrid policy, 21% are neutral and 17% are dissatisfied. Better meeting rooms were the most common request, with 88 mentions."},
+  weak:{text:"Of 240 employees surveyed, 71% are satisfied with the hybrid policy, 12% are neutral and 17% are dissatisfied. Better meeting rooms were the most common request, with 88 mentions.",flaw:"Misreports the satisfied and neutral shares."}},
+ {id:"T12",context:"Facilities has confirmed the office closure dates for December. Katrin has asked {you} to let the whole team know in the team chat.",kind:"Announcement",title:"Announce office closures",
+  prompt:"Write a short announcement for the team chat.",
+  materials:"Office closed Tuesday 8 December (public holiday) and Thursday 24 December. On the 24th, working from home is optional; customer support runs normally from home.",
+  strong:{text:"Heads-up: the office is closed on Tuesday 8 December (public holiday) and Thursday 24 December. On the 24th you're welcome to work from home, and customer support runs as normal remotely."},
+  weak:{text:"Heads-up: the office is closed on Tuesday 8 December (public holiday) and Wednesday 23 December. On the 23rd you're welcome to work from home, and customer support runs as normal remotely.",flaw:"Gives the wrong second closure date."}},
+ {id:"T13",context:"The quarterly review is in two weeks and nobody has set the agenda yet. Katrin has asked {you} to draft one that fits the 90-minute slot.",kind:"Planning",title:"Draft a timed agenda",
+  prompt:"Draft a timed agenda for the quarterly review.",
+  materials:"Length: 90 minutes. Must cover: Q3 results, Q4 forecast, hiring plan, risks.",
+  strong:{text:"Q3 results – 25 min\nQ4 forecast – 25 min\nHiring plan – 20 min\nRisks – 15 min\nWrap-up – 5 min"},
+  weak:{text:"Q3 results – 30 min\nQ4 forecast – 30 min\nRisks – 25 min\nWrap-up – 5 min",flaw:"Leaves out the hiring plan."}},
+ {id:"T14",context:"A long email thread about the upcoming promotion has left people unsure who is doing what. Katrin has asked {you} to pull out the action items.",kind:"Coordination",title:"Extract action items",
+  prompt:"List the action items from the email thread, with owners.",
+  materials:"Sofia: I'll send the revised price list to retailers by Tuesday.\nDaniel: Can someone update the CRM?\nMehmet: I'll do the CRM update tomorrow.\nSofia: Daniel, please check stock levels before the promo.",
+  strong:{text:"• Send revised price list to retailers by Tuesday – Sofia\n• Update the CRM (tomorrow) – Mehmet\n• Check stock levels before the promo – Daniel"},
+  weak:{text:"• Send revised price list to retailers by Tuesday – Sofia\n• Update the CRM (tomorrow) – Daniel\n• Check stock levels before the promo – Daniel",flaw:"Assigns the CRM update to the wrong person."}},
+ {id:"T15",context:"Accounts payable is closing the month and needs every expense in euros. Katrin has asked {you} to convert a London hotel bill for the expense report.",kind:"Finance",title:"Convert an expense",
+  prompt:"Convert the expense to euros for the expense report and show the calculation.",
+  materials:"Expense: hotel in London, £240\nCompany rate this month: £1 = €1.15",
+  strong:{text:"£240 × 1.15 = €276.00"},
+  weak:{text:"£240 ÷ 1.15 = €208.70",flaw:"Divides by the rate instead of multiplying."}},
+ {id:"T16",context:"The new Rosemary & Sea Salt flavour goes live in the online shop next week. Katrin has asked {you} to write its product description.",kind:"Marketing",title:"Write a product description",
+  prompt:"Write a product description for the online shop. Maximum 20 words.",
+  materials:"Product: Rosemary & Sea Salt Crisps, 125 g bag, kettle-cooked, Austrian potatoes, vegan.",
+  strong:{text:"Kettle-cooked crisps from Austrian potatoes, seasoned with rosemary and sea salt. Vegan, in a 125 g bag."},
+  weak:{text:"Discover our irresistible kettle-cooked crisps, lovingly made from the finest Austrian potatoes and seasoned with fragrant rosemary and sea salt, a vegan snack in a handy 125 g bag.",flaw:"Exceeds the 20-word limit."}}
+];
+const TASK = Object.fromEntries(TASKS.map(t=>[t.id,t]));
+const DISCLAIMER = "Past organisational experience shows that the AI agent’s output is rated positively (+1 or +2) about 75% of the time.";
+const SCALE = [[-2,"Very bad"],[-1,"Bad"],[0,"Acceptable"],[1,"Good"],[2,"Very good"]];
+const SEC_PER_TASK = 180;
+const AGENT_URL = "/api/agent";   // Netlify Function that calls the live model; falls back to pre-written outputs if unreachable
+const ctxFor = (task, cond) => task.context.replace("{you}", cond==="group" ? "your department" : "you");
+const KEY = "delegation-lab-v1";
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const norm = s => String(s||"").replace(/\s+/g," ").trim();
+const sameSet = (a,b) => a.length===b.length && a.every(x=>b.includes(x));
+const pct = x => x==null || isNaN(x) ? "–" : Math.round(x*100) + "%";
+const num = (x,d=2) => x==null || isNaN(x) ? "–" : (x>0?"+":"") + x.toFixed(d);
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function shuffle(arr, rnd=Math.random){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+/* Draw tasks and pre-assign agent quality: in every block of 4 tasks, exactly one gets the weak agent output (75% strong). */
+function drawTasks(count, rnd=Math.random){
+  const items = shuffle(TASKS.map(t=>t.id), rnd).slice(0,count).map(id=>({taskId:id, agentVersion:"strong"}));
+  for(let i=0;i<items.length;i+=4){
+    const size = Math.min(4, items.length-i);
+    // full block: exactly one weak; a short final block gets a weak one with probability size/4, keeping the overall rate at 75%
+    if(size===4 || rnd()<size/4) items[i+Math.floor(rnd()*size)].agentVersion="weak";
+  }
+  return items;
+}
+
+/* ---------- storage ---------- */
+function load(){ try{ const s=localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){} return null; }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){} }
+
+/* Netlify Forms: post each record so data from every device lands in one place. Fails silently elsewhere. */
+function postForm(name, fields){
+  try{
+    const body = new URLSearchParams({"form-name":name, ...fields}).toString();
+    fetch("/", {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body}).catch(()=>{});
+  }catch(e){}
+}
+function postSubmission(s){
+  postForm("submissions",{submission_id:s.id,session_id:s.sessionId,condition:s.condition,member_id:s.memberId??"",task_id:s.taskId,agent_version:s.agentVersion,agent_source:s.agentSource||"",delegated:s.delegated,edited:s.edited,skipped:s.skipped,timed_out:s.timedOut,duration_sec:s.durationSec,files:(s.files||[]).join(";"),submitted_at:new Date(s.submittedAt).toISOString(),text:s.text});
+}
+
+/* ---------- example data (clearly marked, removable) ---------- */
+function makeExampleData(){
+  const rnd = mulberry32(11), pick = a => a[Math.floor(rnd()*a.length)];
+  const db = {sessions:[],submissions:[],ratings:[]};
+  const base = Date.UTC(2026,10,4,9,0);
+  function add(condition, members, delegP){
+    const id = "ex-" + (db.sessions.length+1);
+    const tasks = drawTasks(4*members.length, rnd);
+    db.sessions.push({id,condition,members,tasksPerPerson:4,timeLimitSec:4*SEC_PER_TASK,startedAt:base,example:true});
+    tasks.forEach((t,i)=>{
+      const task = TASK[t.taskId], member = members[condition==="individual"?0:i%members.length];
+      const skipped = rnd()<0.05, delegated = !skipped && rnd()<delegP;
+      let edited=false, text="", files=[];
+      if(delegated){ edited = rnd() < (t.agentVersion==="weak"?0.35:0.08); const out = (t.agentVersion==="weak" && !edited) ? task.weak : task.strong; text=out.text; files=out.files||[]; }
+      else if(!skipped){ text=task.strong.text; files=task.strong.files||[]; }
+      const s = {id:id+"-"+i,sessionId:id,condition,memberId:member,taskId:t.taskId,agentVersion:t.agentVersion,agentSource:delegated?"prewritten":"",delegated,edited,skipped,timedOut:false,text,files,durationSec:Math.round(delegated?25+rnd()*55:60+rnd()*110),submittedAt:base+i*60000,example:true};
+      db.submissions.push(s);
+      if(!skipped) ["Judge 1","Judge 2"].forEach(j=>{
+        let sc;
+        if(!delegated) sc=pick([-1,0,1,1,2]);
+        else if(t.agentVersion==="weak") sc = edited ? pick([0,1,1]) : pick([-2,-1,-1]);
+        else sc = pick([1,1,2,2]);
+        db.ratings.push({submissionId:s.id,judge:j,score:sc,example:true});
+      });
+    });
+  }
+  add("individual",["P01"],.30); add("individual",["P02"],.45); add("individual",["P03"],.25); add("individual",["P04"],.50);
+  add("group",["G1-A","G1-B","G1-C","G1-D"],.65); add("group",["G2-A","G2-B","G2-C","G2-D"],.55);
+  return db;
+}
+
+let DB = load();
+if(!DB){ DB = makeExampleData(); save(); }
+let RUN = null;
+let JUDGE = ""; try{ JUDGE = localStorage.getItem(KEY+"-judge") || ""; }catch(e){}
+let flash = "";
+
+/* ---------- routing ---------- */
+function view(){ const h=location.hash.slice(1); return ["participant","panel","researcher"].includes(h)?h:"participant"; }
+function render(){
+  const v = view();
+  document.querySelectorAll(".tabs a").forEach(a=>{ if(a.dataset.view===v) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+  $("#app").innerHTML = v==="participant" ? renderParticipant() : v==="panel" ? renderPanel() : renderResearcher();
+  if(v==="participant" && RUN && !RUN.finished) tick();
+}
+window.addEventListener("hashchange", render);
+
+/* ---------- participant ---------- */
+function renderParticipant(){
+  if(!RUN) return renderSetup();
+  if(RUN.finished) return renderFinished();
+  return renderWorkspace();
+}
+function renderSetup(){
+  return `
+  <section class="grid2">
+    <div class="panel">
+      <div class="eyebrow">New session</div>
+      <h1>Set up a participant session</h1>
+      <p class="muted lede">Run one session per individual or per group. Each person gets the same number of tasks and the same amount of time.</p>
+      <form id="setup" class="panel" style="padding:0;border:0;gap:16px">
+        <div class="grid" style="display:grid;gap:6px">
+          <span class="eyebrow">Condition</span>
+          <div class="seg" role="radiogroup" aria-label="Condition">
+            <label><input type="radio" name="cond" id="cond-ind" value="individual" checked>Individual</label>
+            <label><input type="radio" name="cond" id="cond-grp" value="group">Group of four</label>
+          </div>
+        </div>
+        <div id="idfields" class="grid2" style="gap:12px">${idFields("individual")}</div>
+        <label class="field">Tasks per person
+          <select id="tpp">${[1,2,3,4].map(n=>`<option value="${n}" ${n===4?"selected":""}>${n}</option>`).join("")}</select>
+        </label>
+        <p class="small muted" id="timeinfo">${timeInfo(4)}</p>
+        <div id="setuperr" class="err" role="alert"></div>
+        <div class="row"><button class="btn primary" type="submit">Start session</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">What participants see</div>
+      <h2>Instructions</h2>
+      <p>You will get a set of short workplace tasks for Alderbrook Foods. Each task starts with a short situation from your boss. You can write the answer yourself, let the AI agent do it, or skip it.</p>
+      <div class="disclaimer"><b>About the agent.</b> ${esc(DISCLAIMER)}</div>
+      <p>An independent panel rates every submission from <b>−2</b> (very bad) to <b>+2</b> (very good). A skipped task scores 0. Your reward depends on your total score.</p>
+      <p class="small muted">In the group condition, the group’s total score is shared equally among its four members.</p>
+    </div>
+  </section>`;
+}
+function idFields(cond){
+  if(cond==="individual") return `<label class="field">Participant ID<input type="text" id="id0" value="P${String(DB.sessions.filter(s=>!s.example&&s.condition==="individual").length+1).padStart(2,"0")}" autocomplete="off"></label>`;
+  const g = "G"+(DB.sessions.filter(s=>!s.example&&s.condition==="group").length+1);
+  return ["A","B","C","D"].map((m,i)=>`<label class="field">Member ${i+1} ID<input type="text" id="id${i}" value="${g}-${m}" autocomplete="off"></label>`).join("");
+}
+function timeInfo(n){ const m=n*SEC_PER_TASK/60; return `Time limit: ${m} minutes (${SEC_PER_TASK/60} minutes per task). Groups get the same time, since members work in parallel.`; }
+
+function startSession(){
+  const cond = document.querySelector('input[name=cond]:checked').value;
+  const n = +$("#tpp").value;
+  const count = cond==="individual"?1:4;
+  const members = [...Array(count)].map((_,i)=>norm($("#id"+i).value));
+  if(members.some(m=>!m)){ $("#setuperr").textContent="Enter an ID for every participant."; return; }
+  if(new Set(members).size!==members.length){ $("#setuperr").textContent="Each member needs a different ID."; return; }
+  const session = {id:uid(),condition:cond,members,tasksPerPerson:n,timeLimitSec:n*SEC_PER_TASK,startedAt:Date.now()};
+  DB.sessions.push(session); save();
+  RUN = {session, items:drawTasks(n*count).map(t=>({...t,status:"open",draft:"",files:[],delegated:false,agentText:"",agentFiles:[],openedAt:null,pending:false,result:null,handledBy:null})),
+         current:null, active:members[0], endsAt:Date.now()+session.timeLimitSec*1000, finished:false, error:""};
+  openItem(0);
+  RUN.timer = setInterval(tick, 1000);
+  render();
+}
+function openItem(i){ RUN.current=i; RUN.error=""; const it=RUN.items[i]; if(it && !it.openedAt && it.status==="open") it.openedAt=Date.now(); }
+function fmt(sec){ sec=Math.max(0,Math.ceil(sec)); return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0"); }
+function tick(){
+  if(!RUN || RUN.finished) return;
+  const left = (RUN.endsAt-Date.now())/1000;
+  const el = $("#timer");
+  if(el){ el.textContent=fmt(left); el.className="timer"+(left<=30?" crit":left<=90?" warn":""); }
+  if(left<=0) endRun();
+}
+function endRun(){
+  if(!RUN || RUN.finished) return;
+  clearInterval(RUN.timer);
+  const s = RUN.session, now = Date.now();
+  RUN.items.filter(it=>it.status==="open").forEach(it=>{
+    const sub = {id:uid(),sessionId:s.id,condition:s.condition,memberId:s.condition==="individual"?s.members[0]:null,taskId:it.taskId,agentVersion:it.agentVersion,agentSource:it.delegated?it.agentSource:"",delegated:it.delegated,edited:false,skipped:true,timedOut:true,text:"",files:[],durationSec:it.openedAt?Math.round((now-it.openedAt)/1000):0,submittedAt:now};
+    DB.submissions.push(sub); postSubmission(sub);
+    it.status="done"; it.result="timeout";
+  });
+  s.endedAt = now; save();
+  RUN.finished = true;
+  if(view()==="participant") render();
+}
+function finishItem(kind){
+  const it = RUN.items[RUN.current];
+  if(!it || it.status!=="open" || it.pending) return;
+  if(kind==="submit" && !norm(it.draft)){ RUN.error="Write an answer or let the agent do it before submitting."; render(); return; }
+  const s = RUN.session, now = Date.now();
+  const edited = it.delegated && (norm(it.draft)!==norm(it.agentText) || !sameSet(it.files,it.agentFiles));
+  const sub = {id:uid(),sessionId:s.id,condition:s.condition,memberId:RUN.active,taskId:it.taskId,agentVersion:it.agentVersion,agentSource:it.delegated?it.agentSource:"",delegated:it.delegated,edited:kind==="submit"&&edited,skipped:kind==="skip",timedOut:false,text:kind==="skip"?"":it.draft,files:kind==="skip"?[]:[...it.files],durationSec:Math.round((now-(it.openedAt||now))/1000),submittedAt:now};
+  DB.submissions.push(sub); save(); postSubmission(sub);
+  it.status="done"; it.handledBy=RUN.active; it.result = kind==="skip"?"skipped":it.delegated?(edited?"agent, edited":"agent"):"own";
+  const next = RUN.items.findIndex(x=>x.status==="open");
+  if(next<0){ endRun(); return; }
+  openItem(next); render();
+}
+/* Ask the live model through the Netlify Function. Weak-assigned tasks tell the model to include one specific error,
+   so the stated 75% stays true. Any failure (no function, no key, timeout) uses the pre-written output instead. */
+async function fetchAgent(task, version, cond){
+  const ctrl = new AbortController(), timer = setTimeout(()=>ctrl.abort(), 25000);
+  try{
+    const r = await fetch(AGENT_URL, {method:"POST", headers:{"Content-Type":"application/json"}, signal:ctrl.signal,
+      body:JSON.stringify({context:ctxFor(task,cond), prompt:task.prompt, materials:task.materials, files:task.files||[], version, flaw:version==="weak"?task.weak.flaw:""})});
+    if(!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    if(!j || typeof j.text!=="string" || !j.text.trim()) throw new Error("empty");
+    return {text:j.text.trim(), files:Array.isArray(j.files)?j.files.filter(f=>(task.files||[]).includes(f)):[], source:"live"};
+  }catch(e){
+    const out = task[version];
+    return {text:out.text, files:out.files||[], source:"prewritten"};
+  }finally{ clearTimeout(timer); }
+}
+async function delegate(){
+  const it = RUN.items[RUN.current];
+  if(!it || it.delegated || it.pending || it.status!=="open") return;
+  it.pending = true; render();
+  const run = RUN;
+  const [out] = await Promise.all([fetchAgent(TASK[it.taskId], it.agentVersion, run.session.condition), new Promise(r=>setTimeout(r,1200))]);
+  if(RUN!==run || run.finished || it.status!=="open") return;
+  it.pending=false; it.delegated=true; it.agentSource=out.source; it.agentText=out.text; it.agentFiles=out.files; it.draft=out.text; it.files=[...out.files];
+  render();
+}
+function renderWorkspace(){
+  const s = RUN.session, done = RUN.items.filter(i=>i.status==="done").length;
+  const left = (RUN.endsAt-Date.now())/1000;
+  const it = RUN.items[RUN.current], task = it && TASK[it.taskId];
+  const chip = r => !r ? `<span class="chip">Open</span>` : r==="own" ? `<span class="chip own">Own</span>` : r.startsWith("agent") ? `<span class="chip agent">Agent</span>` : `<span class="chip">Skipped</span>`;
+  return `
+  <div class="runbar">
+    <div><div class="eyebrow">${s.condition==="individual"?"Individual":"Group of four"}</div><div class="timer" id="timer" aria-live="off">${fmt(left)}</div></div>
+    <div class="small muted">${done} of ${RUN.items.length} tasks done</div>
+    <div class="spacer"></div>
+    ${s.condition==="group" ? `<div><div class="eyebrow" style="margin-bottom:4px">Who is working?</div><div class="members" role="group" aria-label="Active member">${s.members.map(m=>`<button type="button" data-member="${esc(m)}" aria-pressed="${m===RUN.active}">${esc(m)}</button>`).join("")}</div></div>` : `<div class="small"><span class="muted">Participant</span> <b>${esc(s.members[0])}</b></div>`}
+  </div>
+  <div class="work">
+    <nav class="tasklist" aria-label="Tasks">
+      ${RUN.items.map((x,i)=>`<button type="button" data-open="${i}" class="${x.status==="done"?"done":""}" aria-current="${i===RUN.current}">
+        <span class="num">${String(i+1).padStart(2,"0")}</span><span class="t">${esc(TASK[x.taskId].title)}</span>${chip(x.result)}</button>`).join("")}
+    </nav>
+    <section class="panel" aria-live="polite">
+      ${!it ? `<p class="muted">Pick a task from the list.</p>` : it.status==="done" ? `
+        <div class="eyebrow">${esc(task.kind)}</div><h2>${esc(task.title)}</h2>
+        <p class="muted">This task is done (${esc(it.result)}${s.condition==="group"&&it.handledBy?` by ${esc(it.handledBy)}`:""}). Pick an open task from the list.</p>` : `
+        <div class="eyebrow">${esc(task.kind)}</div>
+        <h2>${esc(task.title)}</h2>
+        <div class="scenario"><span class="eyebrow">Situation</span><p>${esc(ctxFor(task,s.condition))}</p></div>
+        <p><b>Task:</b> ${esc(task.prompt)}</p>
+        <div class="materials">${esc(task.materials)}</div>
+        ${task.files ? `<div style="display:grid;gap:6px"><span class="eyebrow">Attach files</span><div class="files">${task.files.map((f,fi)=>`<label><input type="checkbox" id="f-${fi}" data-file="${esc(f)}" ${it.files.includes(f)?"checked":""}>${esc(f)}</label>`).join("")}</div></div>` : ""}
+        ${it.delegated ? `<div class="agentnote">This draft came from the agent. Submit it as it is, edit it, or replace it.</div>` : ""}
+        <label class="field" for="answer">Your answer</label>
+        <textarea id="answer" placeholder="Write your answer here…">${esc(it.draft)}</textarea>
+        ${RUN.error ? `<div class="err" role="alert">${esc(RUN.error)}</div>` : ""}
+        <div class="row">
+          ${it.pending ? `<span class="working"><i></i>Agent working…</span>` : `<button type="button" class="btn agent" data-act="agent" ${it.delegated?"disabled":""}>${it.delegated?"Agent used":"Let the agent do it"}</button>`}
+          <div class="spacer"></div>
+          <button type="button" class="btn" data-act="skip" ${it.pending?"disabled":""}>Skip</button>
+          <button type="button" class="btn primary" data-act="submit" ${it.pending?"disabled":""}>Submit</button>
+        </div>
+        <p class="small muted">${esc(DISCLAIMER)} Ratings run from −2 to +2; a skipped task scores 0.</p>`}
+    </section>
+  </div>`;
+}
+function renderFinished(){
+  const s = RUN.session, items = RUN.items;
+  const c = k => items.filter(i=>i.result && i.result.startsWith(k)).length;
+  return `
+  <section class="panel" style="max-width:640px">
+    <div class="eyebrow">Session complete</div>
+    <h1>Thank you${s.condition==="group"?", team":""}</h1>
+    <p>Your submissions have been saved. The panel will rate them, and rewards are paid once rating is finished.</p>
+    <dl class="kv">
+      <dt>Answered yourselves</dt><dd>${c("own")}</dd>
+      <dt>Done by the agent</dt><dd>${c("agent")}</dd>
+      <dt>Skipped</dt><dd>${c("skipped")}</dd>
+      <dt>Not reached in time</dt><dd>${c("timeout")}</dd>
+    </dl>
+    <div class="row"><button type="button" class="btn primary" data-act="new">Start a new session</button></div>
+  </section>`;
+}
+
+/* ---------- panel ---------- */
+function ratingsBy(judge){ return new Set(DB.ratings.filter(r=>r.judge===judge).map(r=>r.submissionId)); }
+function renderPanel(){
+  const pool = DB.submissions.filter(s=>!s.skipped);
+  if(!JUDGE) return `
+    <section class="panel" style="max-width:560px">
+      <div class="eyebrow">Blind panel</div>
+      <h1>Rate submissions</h1>
+      <p class="muted">You will see each submission without knowing who made it, whether the agent was involved, or which condition it came from. Rate it on the task as given.</p>
+      <form id="judgeform" class="row" style="align-items:end">
+        <label class="field" style="flex:1;min-width:200px">Your judge name<input type="text" id="judgename" autocomplete="off" placeholder="e.g. Judge 3"></label>
+        <button class="btn primary" type="submit">Start rating</button>
+      </form>
+    </section>`;
+  const mine = ratingsBy(JUDGE);
+  const todo = pool.filter(s=>!mine.has(s.id)).sort((a,b)=>hash(JUDGE+a.id)-hash(JUDGE+b.id));
+  const doneN = pool.length-todo.length;
+  const head = `<div class="row"><div><div class="eyebrow">Judge</div><b>${esc(JUDGE)}</b></div><div class="spacer"></div><span class="small muted">${doneN} of ${pool.length} rated</span><button type="button" class="btn" data-act="judge-out">Change judge</button></div>
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="${pool.length}" aria-valuenow="${doneN}"><i style="width:${pool.length?doneN/pool.length*100:0}%"></i></div>`;
+  if(!todo.length) return `<section class="panel">${head}<h2>All done</h2><p class="muted">You have rated every submission on this device. New submissions appear here as they come in, or after the researcher imports them.</p></section>`;
+  const s = todo[0], task = TASK[s.taskId];
+  return `
+  <section class="panel">${head}</section>
+  <section class="panel">
+    <div class="row"><div class="eyebrow">${esc(task.kind)} · ${esc(task.id)}</div>${s.example?`<span class="chip ex">Example data</span>`:""}</div>
+    <h2>${esc(task.title)}</h2>
+    <div class="scenario"><span class="eyebrow">Situation</span><p>${esc(ctxFor(task,"individual"))}</p></div>
+    <p><b>Task:</b> ${esc(task.prompt)}</p>
+    <details><summary class="small muted" style="cursor:pointer">Task materials</summary><div class="materials" style="margin-top:8px">${esc(task.materials)}</div></details>
+    <div class="eyebrow">Submission</div>
+    <div class="answer">${esc(s.text)}</div>
+    ${task.files ? `<p class="small"><span class="muted">Attached:</span> <span style="font-family:var(--f-mono)">${s.files&&s.files.length?s.files.map(esc).join(", "):"nothing"}</span></p>`:""}
+    <div class="eyebrow">Your rating</div>
+    <div class="scale">${SCALE.map(([v,l])=>`<button type="button" data-rate="${v}" data-sub="${esc(s.id)}"><b>${v>0?"+":""}${v}</b><span>${l}</span></button>`).join("")}</div>
+  </section>`;
+}
+
+/* ---------- researcher ---------- */
+function scoreOf(s){
+  if(s.skipped) return 0;
+  const rs = DB.ratings.filter(r=>r.submissionId===s.id);
+  return rs.length ? rs.reduce((a,r)=>a+r.score,0)/rs.length : null;
+}
+function analyse(){
+  const persons = {};
+  DB.submissions.filter(s=>!s.timedOut && s.memberId).forEach(s=>{
+    const k = s.sessionId+"|"+s.memberId;
+    const p = persons[k] ||= {id:s.memberId,sessionId:s.sessionId,condition:s.condition,example:!!s.example,handled:0,delegated:0,weakGot:0,weakUnedited:0,scores:[]};
+    p.handled++; if(s.delegated) p.delegated++;
+    if(s.delegated && !s.skipped && s.agentVersion==="weak"){ p.weakGot++; if(!s.edited) p.weakUnedited++; }
+    const sc = scoreOf(s); if(sc!=null) p.scores.push(sc);
+  });
+  const list = Object.values(persons).map(p=>({...p,rate:p.handled?p.delegated/p.handled:null,mean:p.scores.length?p.scores.reduce((a,b)=>a+b,0)/p.scores.length:null}));
+  const cond = c => {
+    const ps = list.filter(p=>p.condition===c);
+    const rates = ps.map(p=>p.rate).filter(x=>x!=null);
+    const sc = ps.flatMap(p=>p.scores);
+    const subs = DB.submissions.filter(s=>s.condition===c && !s.skipped);
+    const rated = subs.filter(s=>DB.ratings.some(r=>r.submissionId===s.id)).length;
+    return {c, persons:ps.length, rate:rates.length?rates.reduce((a,b)=>a+b,0)/rates.length:null,
+      weakGot:ps.reduce((a,p)=>a+p.weakGot,0), weakUnedited:ps.reduce((a,p)=>a+p.weakUnedited,0),
+      mean:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:null, rated, toRate:subs.length,
+      sessions:new Set(ps.map(p=>p.sessionId)).size, timeouts:DB.submissions.filter(s=>s.condition===c&&s.timedOut).length};
+  };
+  return {list, ind:cond("individual"), grp:cond("group")};
+}
+function chart(list, ind, grp){
+  const W=640,H=170,L=110,R=20,T=24,rowH=54,x=v=>L+v*(W-L-R);
+  const rows=[["Individual",ind,"individual"],["Group",grp,"group"]];
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Delegation rate per person by condition" style="width:100%;height:auto;display:block">`;
+  [0,.25,.5,.75,1].forEach(v=>{ g+=`<line x1="${x(v)}" x2="${x(v)}" y1="${T-6}" y2="${T+rowH*2}" stroke="var(--line)"/><text x="${x(v)}" y="${T+rowH*2+16}" text-anchor="middle">${v*100}%</text>`; });
+  rows.forEach(([label,c,key],i)=>{
+    const y=T+i*rowH+rowH/2;
+    g+=`<text x="0" y="${y+4}" style="fill:var(--fg);font-weight:600">${label}</text>`;
+    if(c.rate!=null) g+=`<rect x="${L}" y="${y-11}" width="${Math.max(0,x(c.rate)-L)}" height="22" rx="3" fill="${key==="group"?"var(--agent-soft)":"var(--accent-soft)"}"/><line x1="${x(c.rate)}" x2="${x(c.rate)}" y1="${y-15}" y2="${y+15}" stroke="${key==="group"?"var(--agent)":"var(--accent)"}" stroke-width="3"/>`;
+    list.filter(p=>p.condition===key && p.rate!=null).forEach((p,j)=>{ const jit=((hash(p.sessionId+p.id)%9)-4)*1.6; g+=`<circle cx="${x(p.rate)}" cy="${y+jit}" r="4.5" fill="var(--surface)" stroke="${key==="group"?"var(--agent)":"var(--accent)"}" stroke-width="2"><title>${esc(p.id)}: ${pct(p.rate)}</title></circle>`; });
+  });
+  return g+`</svg>`;
+}
+function csv(){
+  const cols=["submission_id","session_id","condition","member_id","task_id","agent_version","agent_source","delegated","edited","skipped","timed_out","duration_sec","files","mean_rating","n_ratings","example","text"];
+  const q=v=>{ const s=String(v??""); return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; };
+  const rows=DB.submissions.map(s=>{ const rs=DB.ratings.filter(r=>r.submissionId===s.id); const m=rs.length?(rs.reduce((a,r)=>a+r.score,0)/rs.length).toFixed(2):"";
+    return [s.id,s.sessionId,s.condition,s.memberId??"",s.taskId,s.agentVersion,s.agentSource||"",s.delegated,s.edited,s.skipped,s.timedOut,s.durationSec,(s.files||[]).join(";"),m,rs.length,!!s.example,s.text].map(q).join(","); });
+  return [cols.join(","),...rows].join("\n");
+}
+function renderResearcher(){
+  const {list,ind,grp} = analyse();
+  const hasEx = DB.sessions.some(s=>s.example);
+  const diff = ind.rate!=null && grp.rate!=null ? Math.round((grp.rate-ind.rate)*100) : null;
+  const card = (c,label,cls) => `
+    <div class="panel cond">
+      <h3>${label} <span class="chip ${cls}">${c.persons} people · ${c.sessions} sessions</span></h3>
+      <div><div class="big">${pct(c.rate)}</div><div class="small muted">mean share of tasks delegated to the agent</div></div>
+      <dl class="kv">
+        <dt>Weak agent outputs submitted unedited</dt><dd>${c.weakUnedited} of ${c.weakGot}${c.weakGot?` (${pct(c.weakUnedited/c.weakGot)})`:""}</dd>
+        <dt>Mean panel score per task</dt><dd>${num(c.mean)}</dd>
+        <dt>Submissions rated</dt><dd>${c.rated} of ${c.toRate}</dd>
+        <dt>Tasks not reached in time</dt><dd>${c.timeouts}</dd>
+      </dl>
+    </div>`;
+  return `
+  <section class="row">
+    <div><div class="eyebrow">Researcher</div><h1>Delegation results</h1></div>
+    <div class="spacer"></div>
+    ${hasEx?`<span class="chip ex">Includes example data</span><button type="button" class="btn" data-act="clear-ex">Remove example data</button>`:""}
+  </section>
+  ${flash?`<div class="panel small" role="status">${esc(flash)}</div>`:""}
+  <section class="panel">
+    <div class="row"><h2>Hypothesis check</h2><div class="spacer"></div>${diff!=null?`<span class="chip ${diff>0?"good":"bad"}">Group ${diff>=0?"+":""}${diff} pts vs individual</span>`:""}</div>
+    <p class="muted small lede">Group members delegate more to the agent than individuals do. Each dot is one person; the line shows the condition mean. A person’s rate is delegated tasks divided by the tasks they handled (submitted or skipped); tasks not reached in time are left out.</p>
+    ${chart(list,ind,grp)}
+  </section>
+  <section class="stats">${card(ind,"Individual","own")}${card(grp,"Group of four","agent")}</section>
+  <section class="panel">
+    <h2>Per person</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Person</th><th>Condition</th><th>Handled</th><th>Delegated</th><th>Rate</th><th>Weak unedited</th><th>Mean score</th></tr></thead>
+      <tbody>${list.sort((a,b)=>a.condition.localeCompare(b.condition)||a.id.localeCompare(b.id)).map(p=>`<tr><td>${esc(p.id)} ${p.example?'<span class="chip ex">Example</span>':""}</td><td>${p.condition}</td><td>${p.handled}</td><td>${p.delegated}</td><td>${pct(p.rate)}</td><td>${p.weakUnedited} of ${p.weakGot}</td><td>${num(p.mean)}</td></tr>`).join("") || `<tr><td colspan="7" class="muted">No sessions yet.</td></tr>`}</tbody>
+    </table></div>
+  </section>
+  <section class="panel">
+    <div class="row"><h2>Data</h2><div class="spacer"></div>
+      <button type="button" class="btn" data-act="copy-csv">Copy CSV</button>
+      <label class="btn" for="importfile" style="cursor:pointer">Import CSV</label><input type="file" id="importfile" accept=".csv,text/csv" hidden>
+      <button type="button" class="btn danger" data-act="clear-all">Delete all data on this device</button>
+    </div>
+    <p class="small muted lede">On Netlify, every submission and rating is also sent to Netlify Forms (forms “submissions” and “ratings”). Export those as CSV from your Netlify dashboard and import them here to combine data from all devices, or to load submissions onto a judge’s device.</p>
+    <textarea id="csvbox" hidden readonly style="min-height:120px;font-family:var(--f-mono);font-size:.8rem"></textarea>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Time</th><th>Person</th><th>Condition</th><th>Task</th><th>Agent output</th><th>Delegated</th><th>Edited</th><th>Status</th><th>Sec</th><th>Score</th></tr></thead>
+      <tbody>${[...DB.submissions].sort((a,b)=>b.submittedAt-a.submittedAt).slice(0,200).map(s=>{ const sc=scoreOf(s); return `<tr>
+        <td>${new Date(s.submittedAt).toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</td>
+        <td>${esc(s.memberId??"—")}${s.example?' <span class="chip ex">Ex</span>':""}</td><td>${s.condition}</td><td>${s.taskId}</td>
+        <td>${s.agentVersion==="weak"?'<span class="chip bad">weak</span>':'<span class="chip good">strong</span>'}</td>
+        <td>${s.delegated?(s.agentSource==="live"?"yes (live)":"yes"):"no"}</td><td>${s.delegated?(s.edited?"yes":"no"):"–"}</td>
+        <td>${s.timedOut?"not reached":s.skipped?"skipped":"submitted"}</td><td>${s.durationSec}</td><td>${sc==null?"unrated":num(sc)}</td></tr>`; }).join("") || `<tr><td colspan="10" class="muted">No submissions yet.</td></tr>`}</tbody>
+    </table></div>
+  </section>`;
+}
+
+/* CSV import: accepts this tool's export or Netlify Forms exports (matched by column names). */
+function parseCSV(text){
+  const rows=[]; let row=[], f="", q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true; else if(c===','){row.push(f);f="";} else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(f); rows.push(row); row=[]; f=""; } else f+=c; }
+  if(f!==""||row.length){row.push(f);rows.push(row);}
+  const head=(rows.shift()||[]).map(h=>h.trim().toLowerCase());
+  return rows.filter(r=>r.some(x=>x!=="")).map(r=>Object.fromEntries(head.map((h,i)=>[h,r[i]??""])));
+}
+function importCSV(text){
+  const recs=parseCSV(text); let ns=0, nr=0;
+  const bool=v=>String(v).toLowerCase()==="true";
+  const known=new Set(DB.submissions.map(s=>s.id));
+  recs.forEach(r=>{
+    if(r.score!==undefined && r.judge!==undefined && r.submission_id){
+      if(!DB.ratings.some(x=>x.submissionId===r.submission_id && x.judge===r.judge)){ DB.ratings.push({submissionId:r.submission_id,judge:r.judge,score:+r.score}); nr++; }
+    } else if(r.submission_id && r.task_id && TASK[r.task_id] && !known.has(r.submission_id)){
+      DB.submissions.push({id:r.submission_id,sessionId:r.session_id,condition:r.condition,memberId:r.member_id||null,taskId:r.task_id,agentVersion:r.agent_version||"strong",agentSource:r.agent_source||"",delegated:bool(r.delegated),edited:bool(r.edited),skipped:bool(r.skipped),timedOut:bool(r.timed_out),text:r.text||"",files:r.files?r.files.split(";").filter(Boolean):[],durationSec:+r.duration_sec||0,submittedAt:Date.parse(r.submitted_at||r.created_at)||Date.now(),example:bool(r.example)});
+      known.add(r.submission_id); ns++;
+    }
+  });
+  save(); flash=`Imported ${ns} submissions and ${nr} ratings.`; render(); flash="";
+}
+
+/* ---------- events ---------- */
+const armed = {};
+function twoStep(btn, key, label, action){
+  if(armed[key]){ clearTimeout(armed[key]); delete armed[key]; action(); return; }
+  btn.textContent = label; armed[key] = setTimeout(()=>{ delete armed[key]; render(); }, 3500);
+}
+document.addEventListener("click", e=>{
+  const t = e.target.closest("button,[data-open],[data-member],[data-rate]"); if(!t) return;
+  if(t.dataset.open!==undefined){ openItem(+t.dataset.open); render(); return; }
+  if(t.dataset.member){ RUN.active=t.dataset.member; render(); return; }
+  if(t.dataset.rate!==undefined){
+    const r={submissionId:t.dataset.sub,judge:JUDGE,score:+t.dataset.rate,ratedAt:Date.now()};
+    DB.ratings.push(r); save(); postForm("ratings",{submission_id:r.submissionId,judge:r.judge,score:r.score,rated_at:new Date(r.ratedAt).toISOString()}); render(); return;
+  }
+  const a = t.dataset.act;
+  if(a==="agent") delegate();
+  else if(a==="submit") finishItem("submit");
+  else if(a==="skip") finishItem("skip");
+  else if(a==="new"){ RUN=null; render(); }
+  else if(a==="judge-out"){ JUDGE=""; try{localStorage.removeItem(KEY+"-judge")}catch(e){} render(); }
+  else if(a==="clear-ex") twoStep(t,"ex","Click again to remove",()=>{ DB.sessions=DB.sessions.filter(s=>!s.example); DB.submissions=DB.submissions.filter(s=>!s.example); DB.ratings=DB.ratings.filter(r=>!r.example && DB.submissions.some(s=>s.id===r.submissionId)); save(); render(); });
+  else if(a==="clear-all") twoStep(t,"all","Click again to delete everything",()=>{ DB={sessions:[],submissions:[],ratings:[]}; save(); flash="All data on this device was deleted."; render(); flash=""; });
+  else if(a==="copy-csv"){
+    const data = csv(), box=$("#csvbox");
+    const fallback=()=>{ box.hidden=false; box.value=data; box.focus(); box.select(); t.textContent="Select all and copy"; };
+    try{ navigator.clipboard.writeText(data).then(()=>{ t.textContent="Copied"; setTimeout(()=>{t.textContent="Copy CSV"},2000); }, fallback); }catch(err){ fallback(); }
+  }
+});
+document.addEventListener("submit", e=>{
+  e.preventDefault();
+  if(e.target.id==="setup") startSession();
+  if(e.target.id==="judgeform"){ const n=norm($("#judgename").value); if(!n) return; JUDGE=n; try{localStorage.setItem(KEY+"-judge",n)}catch(err){} render(); }
+});
+document.addEventListener("input", e=>{
+  if(e.target.id==="answer" && RUN){ const it=RUN.items[RUN.current]; if(it) it.draft=e.target.value; }
+});
+document.addEventListener("change", e=>{
+  if(e.target.name==="cond"){ $("#idfields").innerHTML=idFields(e.target.value); }
+  if(e.target.id==="tpp"){ $("#timeinfo").textContent=timeInfo(+e.target.value); }
+  if(e.target.dataset && e.target.dataset.file && RUN){ const it=RUN.items[RUN.current]; const f=e.target.dataset.file; it.files = e.target.checked ? [...new Set([...it.files,f])] : it.files.filter(x=>x!==f); }
+  if(e.target.id==="importfile" && e.target.files[0]){ const rd=new FileReader(); rd.onload=()=>importCSV(String(rd.result)); rd.readAsText(e.target.files[0]); }
+});
+render();
+</script>
+
+</body>
+</html>
