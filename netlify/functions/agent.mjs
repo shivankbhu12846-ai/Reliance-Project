@@ -3,9 +3,9 @@
 // The API key never reaches the browser. Set these in Netlify:
 //   Site configuration → Environment variables
 //     AI_API_KEY   your API key (required)
-//     AI_PROVIDER  "anthropic" (default) or "openai"
-//     AI_MODEL     optional for Anthropic (default: claude-haiku-5-5, the fastest current Claude model);
-//                  required for OpenAI (e.g. the model name your key gives you access to)
+//     AI_PROVIDER  "anthropic" (default), "gemini" or "openai"
+//     AI_MODEL     optional for Anthropic (default: claude-haiku-5-5) and Gemini (default: gemini-3.5-flash);
+//                  required for OpenAI (the model name your key gives you access to)
 //
 // For tasks assigned the "weak" version (1 in 4), the model is told to include one specific error,
 // so the 75% figure shown to participants stays true. Everything else is a normal, best-effort answer.
@@ -49,17 +49,20 @@ export default async (req) => {
 
   let raw = "";
   try {
-    if (provider === "openai") {
-      const model = process.env.AI_MODEL;
+    if (provider === "openai" || provider === "gemini") {
+      // Gemini is reached through Google's OpenAI-compatible endpoint (free tier available via Google AI Studio).
+      const gemini = provider === "gemini";
+      const model = process.env.AI_MODEL || (gemini ? "gemini-3.5-flash" : "");
       if (!model) return json({ error: "Set AI_MODEL when using OpenAI." }, 500);
-      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      const base = gemini ? "https://generativelanguage.googleapis.com/v1beta/openai" : "https://api.openai.com/v1";
+      const r = await fetch(`${base}/chat/completions`, {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model,
           messages: [{ role: "system", content: SYSTEM }, { role: "user", content: user }],
           response_format: { type: "json_object" },
-          max_completion_tokens: 2000,
+          ...(gemini ? { max_tokens: 2000 } : { max_completion_tokens: 2000 }),
         }),
       });
       const j = await r.json();

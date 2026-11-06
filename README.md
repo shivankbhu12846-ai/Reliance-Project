@@ -14,8 +14,8 @@ A timed experiment platform for testing whether people delegate more work to an 
 2. In Netlify: **Add new site → Import an existing project**, pick the repository. No build command is needed.
 3. In **Site configuration → Environment variables**, add:
    - `AI_API_KEY` – your API key
-   - `AI_PROVIDER` – `anthropic` (default) or `openai`
-   - `AI_MODEL` – optional for Anthropic (default `claude-haiku-5-5`); required for OpenAI
+   - `AI_PROVIDER` – `anthropic` (default), `gemini` or `openai`
+   - `AI_MODEL` – optional for Anthropic (default `claude-haiku-5-5`) and Gemini (default `gemini-3.5-flash`); required for OpenAI
 4. Redeploy so the function picks up the variables.
 5. In **Forms**, enable form detection. Two forms appear after the next deploy: `submissions` and `ratings`.
 
